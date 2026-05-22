@@ -125,10 +125,16 @@ $env:CONTRACT_ADDRESS="0x..."
 npx hardhat run scripts/interact.js --network localhost
 ```
 
+```bash
+# bash
+export CONTRACT_ADDRESS="0x..."
+npx hardhat run scripts/interact.js --network localhost
+```
+
 ### Interaksi via MetaMask
 
 1. Buka MetaMask -> **Add network manually**:
-   - Network name: `Hardhat Local`
+   - Network name: `Local Hardhat`
    - RPC URL: `http://127.0.0.1:8545`
    - Chain ID: `31337`
    - Currency symbol: `ETH`
@@ -152,12 +158,12 @@ CourseReward deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 | ----- | ---------- |
 | Compile berhasil | ![Compile berhasil](assets/01-compile.png) |
 | Test passing | ![Test passing](assets/02-test.png) |
-| Deploy berhasil | ![Deploy berhasil](assets/03-deploy.png) |
-| MetaMask connected | ![MetaMask connected](assets/04-metamask.png) |
-| Transaksi whitelist | ![Transaksi whitelist](assets/05-tx-whitelist.png) |
-| Transaksi claim | ![Transaksi claim](assets/06-tx-claim.png) |
-| State berubah | ![State berubah](assets/07-state.png) |
-| Bukti tambahan | ![Bukti tambahan](assets/8.png) |
+| Coverage report | ![Coverage report](assets/03-coverage.png) |
+| Deploy node berhasil | ![Deploy node berhasil](assets/04-deploynode.png) |
+| Deploy contract berhasil | ![Deploy contract berhasil](assets/05-deploycontract.png) |
+| Interaksi via script | ![Interaksi via script](assets/06-scriptinteraction.png) |
+| MetaMask connected | ![MetaMask connected](assets/07-metamask.png) ![MetaMask connected 2](assets/08-metamask2.png) |
+| Interaksi via Remix IDE | ![Interaksi di Remix](assets/09-remixinteraction.png) |
 
 ## Catatan Review Keamanan
 
