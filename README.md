@@ -161,19 +161,24 @@ CourseReward deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 
 Ganti dengan address dari deployment Anda sebelum submit.
 
-## Screenshot
+## Screenshots
 
-Simpan bukti demo di `docs/screenshots/` lalu referensikan di sini:
 
-| Screenshot           | Path                                   |
-| -------------------- | -------------------------------------- |
-| Compile berhasil     | `docs/screenshots/01-compile.png`      |
-| Test passing (hijau) | `docs/screenshots/02-test.png`         |
-| Deploy berhasil      | `docs/screenshots/03-deploy.png`       |
-| MetaMask connected   | `docs/screenshots/04-metamask.png`     |
-| Transaksi 1 (whitelist) | `docs/screenshots/05-tx-whitelist.png` |
-| Transaksi 2 (claim)  | `docs/screenshots/06-tx-claim.png`     |
-| State berubah        | `docs/screenshots/07-state.png`        |
+![alt text](assets/01-compile.png) 
+
+![alt text](assets/02-test.png) 
+
+![alt text](assets/03-deploy.png) 
+
+![alt text](assets/04-metamask.png) 
+
+![alt text](assets/05-tx-whitelist.png) 
+
+![alt text](assets/06-tx-claim.png) 
+
+![alt text](assets/07-state.png) 
+
+![alt text](assets/8.png)
 
 ## Catatan Pengembangan
 
