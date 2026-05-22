@@ -186,9 +186,3 @@ Simpan bukti demo di `docs/screenshots/` lalu referensikan di sini:
 - **Funding** — Contract menerima ETH melalui `deposit()` maupun
   `receive()` (transfer langsung), dan owner dapat menarik sisa saldo
   dengan `withdraw(uint256)`.
-
-## Referensi
-
-- [Solidity Documentation](https://docs.soliditylang.org/)
-- [Hardhat Documentation](https://hardhat.org/docs)
-- Project brief: `project-02-smart-contract.md`
