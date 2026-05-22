@@ -13,7 +13,7 @@ contract CourseReward {
     // ---------------------------------------------------------------------
 
     /// @notice Deployer of the contract; only address allowed to configure it.
-    address public owner;
+    address public immutable owner;
 
     /// @notice Default reward (in wei) paid to students who are not assigned
     ///         to a specific tier, or whose tier amount has not been set.
@@ -77,6 +77,7 @@ contract CourseReward {
     // ---------------------------------------------------------------------
 
     constructor(uint256 _rewardAmount) {
+        require(_rewardAmount > 0, "CourseReward: reward must be positive");
         owner = msg.sender;
         rewardAmount = _rewardAmount;
         whitelistEnabled = true;
@@ -87,6 +88,7 @@ contract CourseReward {
     // ---------------------------------------------------------------------
 
     function setRewardAmount(uint256 _newAmount) external onlyOwner {
+        require(_newAmount > 0, "CourseReward: reward must be positive");
         uint256 old = rewardAmount;
         rewardAmount = _newAmount;
         emit AmountChanged(old, _newAmount);
@@ -107,27 +109,22 @@ contract CourseReward {
     }
 
     function addToWhitelist(address _student) external onlyOwner {
-        require(_student != address(0), "CourseReward: zero address");
-        whitelist[_student] = true;
-        emit WhitelistUpdated(_student, true);
+        _setWhitelist(_student, true);
     }
 
     function removeFromWhitelist(address _student) external onlyOwner {
-        whitelist[_student] = false;
-        emit WhitelistUpdated(_student, false);
+        _setWhitelist(_student, false);
     }
 
     function addManyToWhitelist(address[] calldata _students) external onlyOwner {
         for (uint256 i = 0; i < _students.length; i++) {
-            address s = _students[i];
-            if (s == address(0)) continue;
-            whitelist[s] = true;
-            emit WhitelistUpdated(s, true);
+            _setWhitelist(_students[i], true);
         }
     }
 
     function setTierAmount(uint8 _tier, uint256 _amount) external onlyOwner {
         require(_tier > 0, "CourseReward: tier 0 is reserved");
+        require(_amount > 0, "CourseReward: reward must be positive");
         tierAmount[_tier] = _amount;
         emit TierAmountSet(_tier, _amount);
     }
@@ -139,6 +136,7 @@ contract CourseReward {
     }
 
     function withdraw(uint256 _amount) external onlyOwner {
+        require(_amount > 0, "CourseReward: zero withdraw");
         require(_amount <= address(this).balance, "CourseReward: insufficient balance");
         (bool ok, ) = payable(owner).call{value: _amount}("");
         require(ok, "CourseReward: withdraw failed");
@@ -156,11 +154,7 @@ contract CourseReward {
         require(!hasClaimed[msg.sender], "CourseReward: already claimed");
 
         uint8 tier = studentTier[msg.sender];
-        uint256 payout = tier == 0 ? rewardAmount : tierAmount[tier];
-        if (payout == 0) {
-            payout = rewardAmount;
-        }
-        require(payout > 0, "CourseReward: reward not configured");
+        uint256 payout = _rewardFor(msg.sender);
         require(address(this).balance >= payout, "CourseReward: contract underfunded");
 
         hasClaimed[msg.sender] = true;
@@ -181,10 +175,7 @@ contract CourseReward {
     }
 
     function previewReward(address _student) external view returns (uint256) {
-        uint8 tier = studentTier[_student];
-        uint256 payout = tier == 0 ? rewardAmount : tierAmount[tier];
-        if (payout == 0) payout = rewardAmount;
-        return payout;
+        return _rewardFor(_student);
     }
 
     function deposit() external payable {
@@ -193,6 +184,23 @@ contract CourseReward {
     }
 
     receive() external payable {
+        require(msg.value > 0, "CourseReward: zero deposit");
         emit Deposited(msg.sender, msg.value);
+    }
+
+    // ---------------------------------------------------------------------
+    // Internal helpers
+    // ---------------------------------------------------------------------
+
+    function _setWhitelist(address _student, bool _allowed) private {
+        require(_student != address(0), "CourseReward: zero address");
+        whitelist[_student] = _allowed;
+        emit WhitelistUpdated(_student, _allowed);
+    }
+
+    function _rewardFor(address _student) private view returns (uint256) {
+        uint8 tier = studentTier[_student];
+        uint256 payout = tier == 0 ? rewardAmount : tierAmount[tier];
+        return payout == 0 ? rewardAmount : payout;
     }
 }

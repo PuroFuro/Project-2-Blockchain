@@ -41,6 +41,13 @@ describe("CourseReward", function () {
       expect(await contract.rewardAmount()).to.equal(rewardAmount);
     });
 
+    it("rejects a zero initial reward amount", async function () {
+      const Factory = await ethers.getContractFactory("CourseReward");
+      await expect(Factory.deploy(0)).to.be.revertedWith(
+        "CourseReward: reward must be positive"
+      );
+    });
+
     it("should enable the whitelist by default", async function () {
       const { contract } = await loadFixture(deployFixture);
       expect(await contract.whitelistEnabled()).to.equal(true);
@@ -69,6 +76,13 @@ describe("CourseReward", function () {
         contract.connect(attacker).setRewardAmount(ethers.parseEther("0.05"))
       ).to.be.revertedWith("CourseReward: caller is not the owner");
     });
+
+    it("rejects a zero reward amount", async function () {
+      const { contract } = await loadFixture(deployFixture);
+      await expect(contract.setRewardAmount(0)).to.be.revertedWith(
+        "CourseReward: reward must be positive"
+      );
+    });
   });
 
   describe("Whitelist management", function () {
@@ -94,11 +108,25 @@ describe("CourseReward", function () {
       expect(await contract.whitelist(student2.address)).to.equal(true);
     });
 
+    it("rejects zero address in batch whitelist", async function () {
+      const { contract, student1 } = await loadFixture(deployFixture);
+      await expect(
+        contract.addManyToWhitelist([student1.address, ethers.ZeroAddress])
+      ).to.be.revertedWith("CourseReward: zero address");
+    });
+
     it("owner can remove a student from the whitelist", async function () {
       const { contract, student1 } = await loadFixture(deployFixture);
       await contract.addToWhitelist(student1.address);
       await contract.removeFromWhitelist(student1.address);
       expect(await contract.whitelist(student1.address)).to.equal(false);
+    });
+
+    it("rejects zero address in removeFromWhitelist", async function () {
+      const { contract } = await loadFixture(deployFixture);
+      await expect(
+        contract.removeFromWhitelist(ethers.ZeroAddress)
+      ).to.be.revertedWith("CourseReward: zero address");
     });
 
     it("rejects zero address in addToWhitelist", async function () {
@@ -144,6 +172,19 @@ describe("CourseReward", function () {
         .withArgs(student1.address, goldAmount, 2);
     });
 
+    it("student in an unconfigured tier falls back to the default reward", async function () {
+      const { contract, student1, rewardAmount } = await loadFixture(
+        deployFixture
+      );
+
+      await contract.assignTier(student1.address, 9);
+      await contract.addToWhitelist(student1.address);
+
+      await expect(contract.connect(student1).claim())
+        .to.emit(contract, "RewardClaimed")
+        .withArgs(student1.address, rewardAmount, 9);
+    });
+
     it("disabling the whitelist allows any address to claim once", async function () {
       const { contract, student3, rewardAmount } = await loadFixture(
         deployFixture
@@ -170,6 +211,11 @@ describe("CourseReward", function () {
       expect(await contract.previewReward(student2.address)).to.equal(
         tierTwoAmount
       );
+    });
+
+    it("getBalance returns the current contract ETH balance", async function () {
+      const { contract } = await loadFixture(deployFixture);
+      expect(await contract.getBalance()).to.equal(ethers.parseEther("1"));
     });
   });
 
@@ -203,8 +249,22 @@ describe("CourseReward", function () {
       );
     });
 
+    it("allows a whitelisted student to claim before a configured deadline", async function () {
+      const { contract, student1, rewardAmount } = await loadFixture(
+        deployFixture
+      );
+      await contract.addToWhitelist(student1.address);
+
+      const deadline = (await time.latest()) + 3600;
+      await contract.setDeadline(deadline);
+
+      await expect(contract.connect(student1).claim())
+        .to.emit(contract, "RewardClaimed")
+        .withArgs(student1.address, rewardAmount, 0);
+    });
+
     it("reverts when the contract is underfunded", async function () {
-      const [owner, student1] = await ethers.getSigners();
+      const [, student1] = await ethers.getSigners();
       const big = ethers.parseEther("10");
       const Factory = await ethers.getContractFactory("CourseReward");
       const fresh = await Factory.deploy(big);
@@ -244,6 +304,13 @@ describe("CourseReward", function () {
       ).to.be.revertedWith("CourseReward: tier 0 is reserved");
     });
 
+    it("setTierAmount rejects zero amount", async function () {
+      const { contract } = await loadFixture(deployFixture);
+      await expect(contract.setTierAmount(1, 0)).to.be.revertedWith(
+        "CourseReward: reward must be positive"
+      );
+    });
+
     it("assignTier records the student's tier and emits TierAssigned", async function () {
       const { contract, student1 } = await loadFixture(deployFixture);
       await expect(contract.assignTier(student1.address, 3))
@@ -262,6 +329,13 @@ describe("CourseReward", function () {
         .withArgs(attacker.address, amount);
     });
 
+    it("rejects zero-value deposits through deposit()", async function () {
+      const { contract, attacker } = await loadFixture(deployFixture);
+      await expect(
+        contract.connect(attacker).deposit({ value: 0 })
+      ).to.be.revertedWith("CourseReward: zero deposit");
+    });
+
     it("direct ETH transfer hits receive() and emits Deposited", async function () {
       const { contract, attacker } = await loadFixture(deployFixture);
       const amount = ethers.parseEther("0.1");
@@ -273,6 +347,16 @@ describe("CourseReward", function () {
       )
         .to.emit(contract, "Deposited")
         .withArgs(attacker.address, amount);
+    });
+
+    it("rejects zero-value direct ETH transfers", async function () {
+      const { contract, attacker } = await loadFixture(deployFixture);
+      await expect(
+        attacker.sendTransaction({
+          to: await contract.getAddress(),
+          value: 0,
+        })
+      ).to.be.revertedWith("CourseReward: zero deposit");
     });
 
     it("owner can withdraw ETH and emits Withdrawn", async function () {
@@ -291,6 +375,13 @@ describe("CourseReward", function () {
       await expect(
         contract.connect(attacker).withdraw(ethers.parseEther("0.1"))
       ).to.be.revertedWith("CourseReward: caller is not the owner");
+    });
+
+    it("rejects zero-value withdraws", async function () {
+      const { contract } = await loadFixture(deployFixture);
+      await expect(contract.withdraw(0)).to.be.revertedWith(
+        "CourseReward: zero withdraw"
+      );
     });
   });
 });
